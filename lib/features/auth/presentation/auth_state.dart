@@ -18,13 +18,6 @@ final class AuthSigningIn extends AuthState {
   const AuthSigningIn();
 }
 
-final class AuthMfaRequired extends AuthState {
-  const AuthMfaRequired({required this.mfaToken, required this.methods});
-
-  final String mfaToken;
-  final List<String> methods;
-}
-
 final class AuthSignedIn extends AuthState {
   const AuthSignedIn();
 }

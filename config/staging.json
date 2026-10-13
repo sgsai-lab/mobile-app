@@ -1,5 +1,5 @@
 {
   "FLAVOR": "staging",
-  "API_BASE_URL": "https://api-staging.example.com",
-  "ENABLE_HTTP_LOGGING": true
+  "API_BASE_URL": "https://api-staging.sgsaitechnology.com",
+  "ENABLE_HTTP_LOGGING": false
 }

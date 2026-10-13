@@ -32,6 +32,8 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
       - name: Analyzer (infos are failures)
         run: flutter analyze --fatal-infos
+      - name: OpenAPI models are current
+        run: make api-check
 
   test:
     name: Unit & widget tests
@@ -103,3 +105,22 @@ jobs:
           name: app-dev-debug
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 7
+
+  build-ios:
+    name: iOS dev build (unsigned)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [static-analysis, test]
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build iOS dev app without signing
+        run: >-
+          flutter build ios --no-codesign --flavor dev
+          --dart-define-from-file=config/dev.json

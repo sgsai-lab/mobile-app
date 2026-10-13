@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:mobile_app/core/network/generated/backend.models.swagger.dart'
+    as api_models;
 
 class ApiErrorDetail {
   const ApiErrorDetail({required this.field, required this.message});
@@ -27,20 +29,27 @@ class ApiException implements Exception {
     final response = error.response;
     final data = response?.data;
     if (data is Map<String, dynamic>) {
-      final envelope = data['error'];
-      if (envelope is Map<String, dynamic>) {
-        final rawDetails = envelope['details'];
+      try {
+        final envelope = api_models.ErrorEnvelope.fromJson(data).error;
         return ApiException(
-          code: envelope['code'] as String? ?? 'HTTP_ERROR',
-          message: envelope['message'] as String? ?? 'Request failed.',
+          code: envelope.code,
+          message: envelope.message,
           statusCode: response?.statusCode,
-          requestId: envelope['requestId'] as String?,
-          details: rawDetails is List
-              ? rawDetails
-                    .whereType<Map<String, dynamic>>()
-                    .map(ApiErrorDetail.fromJson)
-                    .toList(growable: false)
-              : const <ApiErrorDetail>[],
+          requestId: envelope.requestId,
+          details: envelope.details
+              .map(
+                (detail) => ApiErrorDetail(
+                  field: detail.field ?? '',
+                  message: detail.message,
+                ),
+              )
+              .toList(growable: false),
+        );
+      } on Object {
+        return ApiException(
+          code: 'HTTP_ERROR',
+          message: 'Something went wrong. Please try again.',
+          statusCode: response?.statusCode,
         );
       }
     }

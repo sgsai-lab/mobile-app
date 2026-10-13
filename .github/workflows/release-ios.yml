@@ -35,29 +35,74 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install signing assets
+      - name: Install distribution signing assets
         env:
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
+          IOS_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_FIREBASE_CONFIG_BASE64: ${{ secrets.IOS_FIREBASE_CONFIG_BASE64 }}
+          IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
-          # TODO(APP-09): replace with `fastlane match readonly` against the
-          # private certificates repo. Certificates must never be committed.
-          mkdir -p ~/private_keys
-          echo "$APP_STORE_CONNECT_KEY_BASE64" | base64 --decode \
-            > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_ID.p8
+          keychain="$RUNNER_TEMP/ios-release.keychain-db"
+          certificate="$RUNNER_TEMP/distribution.p12"
+          profile="$RUNNER_TEMP/distribution.mobileprovision"
+          profile_plist="$RUNNER_TEMP/distribution-profile.plist"
+          firebase_config="$GITHUB_WORKSPACE/ios/Runner/Firebase/$FLAVOR/GoogleService-Info.plist"
+          mkdir -p "$(dirname "$firebase_config")"
+          printf '%s' "$IOS_FIREBASE_CONFIG_BASE64" | base64 -D > "$firebase_config"
+          security create-keychain -p "$IOS_KEYCHAIN_PASSWORD" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$IOS_KEYCHAIN_PASSWORD" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          printf '%s' "$IOS_CERTIFICATE_BASE64" | base64 -D > "$certificate"
+          security import "$certificate" -k "$keychain" \
+            -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -k "$IOS_KEYCHAIN_PASSWORD" "$keychain"
+          printf '%s' "$IOS_PROFILE_BASE64" | base64 -D > "$profile"
+          security cms -D -i "$profile" > "$profile_plist"
+          profile_name=$(/usr/libexec/PlistBuddy -c 'Print Name' "$profile_plist")
+          case "$FLAVOR" in
+            staging) bundle_id="com.sgsaitechnology.app.stg" ;;
+            prod) bundle_id="com.sgsaitechnology.app" ;;
+            *) echo "Unsupported release flavor: $FLAVOR" >&2; exit 1 ;;
+          esac
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>provisioningProfiles</key><dict>
+              <key>$bundle_id</key><string>$profile_name</string>
+            </dict>
+          </dict></plist>
+          EOF
+          echo "IOS_KEYCHAIN_PATH=$keychain" >> "$GITHUB_ENV"
+          echo "IOS_CERTIFICATE_PATH=$certificate" >> "$GITHUB_ENV"
+          echo "IOS_PROFILE_PATH=$profile" >> "$GITHUB_ENV"
+          echo "IOS_PROFILE_PLIST_PATH=$profile_plist" >> "$GITHUB_ENV"
+          echo "IOS_FIREBASE_CONFIG_PATH=$firebase_config" >> "$GITHUB_ENV"
 
       - run: flutter pub get
       - name: Build IPA
         run: >-
           flutter build ipa --release --flavor "$FLAVOR"
           --dart-define-from-file="config/$FLAVOR.json"
-          --export-options-plist=ios/ExportOptions.plist
+          --dart-define=FIREBASE_ENABLED=true
+          --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
 
       - name: Remove signing material
         if: always()
-        run: rm -rf ~/private_keys
+        run: |
+          security delete-keychain "$IOS_KEYCHAIN_PATH" 2>/dev/null || true
+          rm -f "$IOS_CERTIFICATE_PATH" "$IOS_PROFILE_PATH" \
+            "$IOS_PROFILE_PLIST_PATH" "$RUNNER_TEMP/ExportOptions.plist" \
+            "$IOS_FIREBASE_CONFIG_PATH"
+          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

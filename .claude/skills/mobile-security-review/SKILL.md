@@ -15,11 +15,11 @@ Run this before opening the PR. Anything shipped in the binary is public; anythi
 - [ ] Release signing material only reaches CI through a protected environment and is deleted after the build.
 
 ### Tokens & identity
-- [ ] Access/refresh tokens are written only via `TokenStore` (Keychain / EncryptedSharedPreferences).
+- [ ] Firebase ID/refresh tokens remain inside the FirebaseAuth SDK; the app never copies them into its own storage.
 - [ ] No token in logs, analytics, crash reports, URLs, screenshots or error messages.
-- [ ] Refresh and 401 handling stay inside `AuthInterceptor`; one refresh attempt, then sign out and clear storage.
+- [ ] Firebase token attachment and one forced refresh stay inside `AuthInterceptor`; then sign out locally and rely on backend Firebase revocation.
 - [ ] Sign-out clears every token and cached personal data, and revokes server-side.
-- [ ] Identity is never taken from a request field — only from the token-derived `/users/me`.
+- [ ] Identity is never taken from a request field — Firebase UID is verified by the backend; profile comes from `/users/me`.
 
 ### Transport
 - [ ] HTTPS everywhere outside `dev`; no cleartext traffic, no ATS exceptions, no certificate validation disabled.

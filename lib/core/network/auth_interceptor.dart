@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:mobile_app/core/network/api_endpoints.dart';
-import 'package:mobile_app/core/storage/token_store.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Set `Options(extra: {skipAuth: true})` on endpoints that must not carry a
 /// bearer token (sign-in, refresh, registration).
@@ -12,12 +11,12 @@ const String _retried = 'retriedAfterRefresh';
 /// [QueuedInterceptor] serialises requests so parallel 401s cause one refresh.
 class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({
-    required this._tokenStore,
+    required this._firebaseAuth,
     required this._refreshClient,
     required this._onSessionExpired,
   });
 
-  final TokenStore _tokenStore;
+  final FirebaseAuth? _firebaseAuth;
   final Dio _refreshClient;
   final Future<void> Function() _onSessionExpired;
 
@@ -27,7 +26,7 @@ class AuthInterceptor extends QueuedInterceptor {
     RequestInterceptorHandler handler,
   ) async {
     if (options.extra[skipAuth] != true) {
-      final token = await _tokenStore.readAccessToken();
+      final token = await _firebaseAuth?.currentUser?.getIdToken();
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
       }
@@ -50,42 +49,41 @@ class AuthInterceptor extends QueuedInterceptor {
       return;
     }
 
-    if (!await _refreshTokens()) {
-      await _tokenStore.clear();
-      await _onSessionExpired();
+    if (!await _refreshFirebaseToken()) {
+      await _expireSession();
       handler.next(err);
       return;
     }
 
     try {
-      final token = await _tokenStore.readAccessToken();
+      final token = await _firebaseAuth?.currentUser?.getIdToken();
       options
         ..extra[_retried] = true
         ..headers['Authorization'] = 'Bearer $token';
       handler.resolve(await _refreshClient.fetch<dynamic>(options));
     } on DioException catch (retryError) {
+      if (retryError.response?.statusCode == 401) {
+        await _expireSession();
+      }
       handler.next(retryError);
     }
   }
 
-  Future<bool> _refreshTokens() async {
-    final refreshToken = await _tokenStore.readRefreshToken();
-    if (refreshToken == null) return false;
+  Future<void> _expireSession() async {
     try {
-      final response = await _refreshClient.post<Map<String, dynamic>>(
-        ApiEndpoints.refresh,
-        data: <String, String>{'refresh_token': refreshToken},
-        options: Options(extra: <String, bool>{skipAuth: true}),
-      );
-      final data = response.data;
-      final accessToken = data?['access_token'] as String?;
-      if (accessToken == null) return false;
-      await _tokenStore.save(
-        accessToken: accessToken,
-        refreshToken: data?['refresh_token'] as String?,
-      );
-      return true;
-    } on DioException {
+      await _firebaseAuth?.signOut();
+    } on FirebaseAuthException {
+      // The SDK can already have removed a revoked or expired user locally.
+    }
+    await _onSessionExpired();
+  }
+
+  Future<bool> _refreshFirebaseToken() async {
+    final user = _firebaseAuth?.currentUser;
+    if (user == null) return false;
+    try {
+      return await user.getIdToken(true) != null;
+    } on FirebaseAuthException {
       return false;
     }
   }

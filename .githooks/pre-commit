@@ -13,7 +13,7 @@ status=0
 fail() { echo "✖ $1" >&2; status=1; }
 
 # 1. Files that must never be committed.
-blocked=$(echo "$staged" | grep -Ei '(^|/)(\.env(\..*)?$|key\.properties$|google-services\.json$|GoogleService-Info\.plist$)|\.(jks|keystore|p12|mobileprovision|cer|certSigningRequest)$' | grep -v '\.env\.example$' || true)
+blocked=$(echo "$staged" | grep -Ei '(^|/)(\.env(\..*)?$|key\.properties$|google-services\.json$|GoogleService-Info\.plist$)|\.(jks|keystore|p12|p8|mobileprovision|cer|certSigningRequest)$' | grep -v '\.env\.example$' || true)
 if [[ -n "$blocked" ]]; then
   fail "Signing material or local config staged:"
   echo "$blocked" | sed 's/^/    /' >&2

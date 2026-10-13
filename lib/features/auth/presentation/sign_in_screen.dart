@@ -41,7 +41,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     ref.listen<AuthState>(authControllerProvider, (_, next) {
       final message = switch (next) {
         AuthSignedOut(:final message?) => message,
-        AuthMfaRequired() => 'Two-factor sign-in is not available yet.',
         _ => null,
       };
       if (message != null) {

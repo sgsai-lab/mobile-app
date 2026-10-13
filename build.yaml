@@ -1,0 +1,17 @@
+targets:
+  $default:
+    sources:
+      - "$package$"
+      - "lib/**"
+      - "openapi/**"
+    builders:
+      swagger_dart_code_generator:
+        options:
+          input_folder: "openapi/"
+          output_folder: "lib/core/network/generated/"
+          build_only_models: true
+          separate_models: true
+          import_paths:
+            - "package:mobile_app/core/network/api_type_aliases.dart"
+          classes_with_nullabe_lists:
+            - "ProjectUpdate"

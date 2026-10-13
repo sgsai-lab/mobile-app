@@ -29,6 +29,7 @@ class AppConfig {
     required this.flavor,
     required this.apiBaseUrl,
     this.enableHttpLogging = false,
+    this.firebaseEnabled = false,
     this.connectTimeout = const Duration(seconds: 10),
     this.receiveTimeout = const Duration(seconds: 20),
   });
@@ -37,7 +38,21 @@ class AppConfig {
     const flavorKey = String.fromEnvironment('FLAVOR', defaultValue: 'dev');
     const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
     const enableHttpLogging = bool.fromEnvironment('ENABLE_HTTP_LOGGING');
+    const firebaseEnabled = bool.fromEnvironment('FIREBASE_ENABLED');
+    return AppConfig.fromValues(
+      flavorKey: flavorKey,
+      apiBaseUrl: apiBaseUrl,
+      enableHttpLogging: enableHttpLogging,
+      firebaseEnabled: firebaseEnabled,
+    );
+  }
 
+  factory AppConfig.fromValues({
+    required String flavorKey,
+    required String apiBaseUrl,
+    required bool enableHttpLogging,
+    required bool firebaseEnabled,
+  }) {
     final flavor = Flavor.fromKey(flavorKey);
     final uri = Uri.tryParse(apiBaseUrl);
     if (apiBaseUrl.isEmpty || uri == null || !uri.isAbsolute) {
@@ -53,13 +68,15 @@ class AppConfig {
     return AppConfig(
       flavor: flavor,
       apiBaseUrl: apiBaseUrl,
-      enableHttpLogging: enableHttpLogging && flavor != Flavor.prod,
+      enableHttpLogging: enableHttpLogging && flavor == Flavor.dev,
+      firebaseEnabled: firebaseEnabled,
     );
   }
 
   final Flavor flavor;
   final String apiBaseUrl;
   final bool enableHttpLogging;
+  final bool firebaseEnabled;
   final Duration connectTimeout;
   final Duration receiveTimeout;
 
