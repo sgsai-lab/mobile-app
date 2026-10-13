@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Full gate before code leaves the machine: format, analyze, test.
+set -uo pipefail
+
+[[ "${SKIP_HOOKS:-0}" == "1" ]] && exit 0
+
+cd "$(git rev-parse --show-toplevel)"
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$branch" == "main" || "$branch" == "develop" ]]; then
+  echo "! Pushing directly to $branch — open a pull request instead." >&2
+fi
+
+if ! command -v flutter >/dev/null 2>&1; then
+  echo "! flutter not found; skipping analyze and tests." >&2
+  exit 0
+fi
+
+echo "pre-push: dart format"
+dart format --output=none --set-exit-if-changed . || {
+  echo "✖ Formatting. Run: make format" >&2
+  exit 1
+}
+
+echo "pre-push: flutter analyze"
+flutter analyze --fatal-infos || {
+  echo "✖ Static analysis failed." >&2
+  exit 1
+}
+
+echo "pre-push: flutter test"
+flutter test || {
+  echo "✖ Tests failed." >&2
+  exit 1
+}

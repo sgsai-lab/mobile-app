@@ -1,0 +1,46 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_app/core/network/api_exception.dart';
+import 'package:mobile_app/features/{{feature}}/data/{{feature}}_repository.dart';
+
+sealed class {{Feature}}State {
+  const {{Feature}}State();
+}
+
+final class {{Feature}}Idle extends {{Feature}}State {
+  const {{Feature}}Idle();
+}
+
+final class {{Feature}}Submitting extends {{Feature}}State {
+  const {{Feature}}Submitting();
+}
+
+final class {{Feature}}Failed extends {{Feature}}State {
+  const {{Feature}}Failed(this.message);
+
+  final String message;
+}
+
+final class {{Feature}}Succeeded extends {{Feature}}State {
+  const {{Feature}}Succeeded();
+}
+
+class {{Feature}}Controller extends Notifier<{{Feature}}State> {
+  @override
+  {{Feature}}State build() => const {{Feature}}Idle();
+
+  Future<void> submit({required String value}) async {
+    state = const {{Feature}}Submitting();
+    try {
+      await ref.read({{feature}}RepositoryProvider).submit(value);
+      state = const {{Feature}}Succeeded();
+    } on ApiException catch (error) {
+      // ApiException.message is already user-safe; never surface raw exceptions.
+      state = {{Feature}}Failed(error.message);
+    }
+  }
+}
+
+final {{feature}}ControllerProvider =
+    NotifierProvider<{{Feature}}Controller, {{Feature}}State>(
+  {{Feature}}Controller.new,
+);

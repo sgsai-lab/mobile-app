@@ -1,0 +1,36 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_app/core/network/api_client.dart';
+import 'package:mobile_app/core/network/api_endpoints.dart';
+import 'package:mobile_app/core/network/api_exception.dart';
+import 'package:mobile_app/features/{{feature}}/domain/{{entity}}.dart';
+
+class {{Feature}}Repository {
+  const {{Feature}}Repository(this._dio);
+
+  final Dio _dio;
+
+  Future<List<{{Entity}}>> fetchAll() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiEndpoints.{{feature}},
+        queryParameters: <String, Object>{'page': 1, 'page_size': 20},
+      );
+      final items = response.data?['items'] as List<dynamic>? ?? <dynamic>[];
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map({{Entity}}.fromJson)
+          .toList(growable: false);
+    } on DioException catch (error) {
+      throw ApiException.fromDioException(error);
+    }
+  }
+}
+
+final {{feature}}RepositoryProvider = Provider<{{Feature}}Repository>(
+  (ref) => {{Feature}}Repository(ref.watch(dioProvider)),
+);
+
+final {{feature}}ListProvider = FutureProvider<List<{{Entity}}>>(
+  (ref) => ref.watch({{feature}}RepositoryProvider).fetchAll(),
+);

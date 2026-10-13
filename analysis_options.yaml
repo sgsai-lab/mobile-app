@@ -1,0 +1,27 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    # CI runs `flutter analyze --fatal-infos`; these stay hard errors locally too.
+    invalid_annotation_target: ignore
+    todo: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/generated/**"
+    - build/**
+
+linter:
+  rules:
+    # One import style across the repo so moving files never rewrites imports.
+    always_use_package_imports: true
+    prefer_relative_imports: false
+    # Docs are required on exported APIs only; this app has no public package surface.
+    public_member_api_docs: false
+    avoid_print: true
+    prefer_single_quotes: true
+    require_trailing_commas: true

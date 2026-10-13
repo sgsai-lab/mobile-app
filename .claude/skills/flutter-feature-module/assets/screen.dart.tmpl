@@ -1,0 +1,44 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_app/app/theme/design_tokens.dart';
+import 'package:mobile_app/core/network/api_exception.dart';
+import 'package:mobile_app/features/{{feature}}/data/{{feature}}_repository.dart';
+import 'package:mobile_app/shared/widgets/app_error_view.dart';
+
+class {{Feature}}Screen extends ConsumerWidget {
+  const {{Feature}}Screen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch({{feature}}ListProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('{{Feature}}')),
+      body: items.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator.adaptive(
+            semanticsLabel: 'Loading {{feature}}',
+          ),
+        ),
+        error: (error, _) => AppErrorView(
+          message: error is ApiException
+              ? error.message
+              : 'Could not load {{feature}}.',
+          onRetry: () => ref.invalidate({{feature}}ListProvider),
+        ),
+        data: (data) => data.isEmpty
+            ? const Center(child: Text('Nothing here yet.'))
+            : RefreshIndicator(
+                onRefresh: () async => ref.refresh({{feature}}ListProvider.future),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  itemCount: data.length,
+                  itemBuilder: (context, index) => ListTile(
+                    title: Text(data[index].title),
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}

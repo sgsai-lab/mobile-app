@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Conventional Commits — the release notes and PR title check depend on it.
+set -uo pipefail
+
+[[ "${SKIP_HOOKS:-0}" == "1" ]] && exit 0
+
+message_file="$1"
+subject=$(head -n1 "$message_file")
+
+# Merges, reverts and rebase helpers pass through untouched.
+if [[ "$subject" =~ ^(Merge|Revert|fixup!|squash!) ]]; then
+  exit 0
+fi
+
+pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9._/-]+\))?!?: .+'
+
+if ! [[ "$subject" =~ $pattern ]]; then
+  cat >&2 <<EOF
+✖ Commit message must follow Conventional Commits.
+
+  Got:      $subject
+  Expected: <type>(<scope>): <summary>
+  Types:    build chore ci docs feat fix perf refactor revert style test
+
+  Examples: feat(auth): add password sign-in screen
+            fix(network): stop retrying refresh on 401 loops
+  Reference the issue in the body: Refs #12
+EOF
+  exit 1
+fi
+
+if (( ${#subject} > 72 )); then
+  echo "✖ Subject is ${#subject} characters; keep it under 72." >&2
+  exit 1
+fi

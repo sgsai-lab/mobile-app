@@ -1,0 +1,30 @@
+{
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+        80
+    ],
+    "dart.lineLength": 80,
+    "dart.previewFlutterUiGuides": true,
+    "dart.runPubGetOnPubspecChanges": "always",
+    "[dart]": {
+        "editor.defaultFormatter": "Dart-Code.dart-code",
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit"
+        },
+        "editor.selectionHighlight": false,
+        "editor.suggestSelection": "first",
+        "editor.tabCompletion": "onlySnippets",
+        "editor.wordBasedSuggestions": "off"
+    },
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.exclude": {
+        "**/.dart_tool": true,
+        "**/build": true
+    },
+    "search.exclude": {
+        "**/.dart_tool": true,
+        "**/build": true,
+        "**/coverage": true
+    }
+}

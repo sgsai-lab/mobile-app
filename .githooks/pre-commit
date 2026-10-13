@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Fast, staged-only checks. Heavy analysis and tests run in pre-push.
+set -uo pipefail
+
+[[ "${SKIP_HOOKS:-0}" == "1" ]] && exit 0
+
+cd "$(git rev-parse --show-toplevel)"
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[[ -z "$staged" ]] && exit 0
+
+status=0
+fail() { echo "✖ $1" >&2; status=1; }
+
+# 1. Files that must never be committed.
+blocked=$(echo "$staged" | grep -Ei '(^|/)(\.env(\..*)?$|key\.properties$|google-services\.json$|GoogleService-Info\.plist$)|\.(jks|keystore|p12|mobileprovision|cer|certSigningRequest)$' | grep -v '\.env\.example$' || true)
+if [[ -n "$blocked" ]]; then
+  fail "Signing material or local config staged:"
+  echo "$blocked" | sed 's/^/    /' >&2
+  echo "    Keep these out of git — see docs/flavors.md." >&2
+fi
+
+# 2. Credentials inside otherwise-normal files.
+# shellcheck disable=SC2086
+echo "$staged" | tr '\n' '\0' | xargs -0 ./scripts/scan-secrets.sh || fail "Secret scan failed."
+
+# 3. Large files — binaries belong in the asset pipeline, not git.
+while IFS= read -r file; do
+  [[ -f "$file" ]] || continue
+  size=$(wc -c <"$file" | tr -d ' ')
+  if (( size > 1048576 )); then
+    fail "$file is $((size / 1024)) KB (limit 1024 KB)."
+  fi
+done <<<"$staged"
+
+# 4. Dart formatting.
+dart_files=$(echo "$staged" | grep '\.dart$' || true)
+if [[ -n "$dart_files" ]] && command -v dart >/dev/null 2>&1; then
+  if ! echo "$dart_files" | tr '\n' '\0' | xargs -0 dart format --output=none --set-exit-if-changed >/dev/null 2>&1; then
+    fail "Dart formatting. Run: make format"
+  fi
+fi
+
+# 5. pubspec.yaml and pubspec.lock move together.
+if echo "$staged" | grep -q '^pubspec.yaml$' && ! echo "$staged" | grep -q '^pubspec.lock$'; then
+  echo "! pubspec.yaml changed without pubspec.lock — run flutter pub get." >&2
+fi
+
+exit $status
