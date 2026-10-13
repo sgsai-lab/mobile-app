@@ -25,7 +25,7 @@ joined="$(IFS=, ; echo "${platforms[*]}")"
 echo "Creating platform projects: $joined"
 flutter create \
   --project-name mobile_app \
-  --org com.sgsai \
+  --org com.sgsaitechnology \
   --platforms="$joined" \
   .
 

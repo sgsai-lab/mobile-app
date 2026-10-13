@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/core/config/app_config.dart';
@@ -16,6 +17,9 @@ Future<void> bootstrap(AppBuilder builder) async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      if (config.firebaseEnabled) {
+        await Firebase.initializeApp();
+      }
 
       FlutterError.onError = (details) {
         AppLogger.instance.error(

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/core/network/api_exception.dart';
 import 'package:mobile_app/core/session/session_events.dart';
 import 'package:mobile_app/features/auth/data/auth_repository.dart';
-import 'package:mobile_app/features/auth/domain/auth_tokens.dart';
 import 'package:mobile_app/features/auth/presentation/auth_state.dart';
 
 class AuthController extends Notifier<AuthState> {
@@ -32,24 +31,21 @@ class AuthController extends Notifier<AuthState> {
   Future<void> signIn({required String email, required String password}) async {
     state = const AuthSigningIn();
     try {
-      final result = await ref
+      await ref
           .read(authRepositoryProvider)
           .signIn(email: email, password: password);
-      state = switch (result) {
-        SignInSucceeded() => const AuthSignedIn(),
-        SignInNeedsMfa(:final mfaToken, :final methods) => AuthMfaRequired(
-          mfaToken: mfaToken,
-          methods: methods,
-        ),
-      };
+      state = const AuthSignedIn();
     } on ApiException catch (error) {
       state = AuthSignedOut(message: error.message);
     }
   }
 
   Future<void> signOut() async {
-    await ref.read(authRepositoryProvider).signOut();
-    state = const AuthSignedOut();
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+    } finally {
+      state = const AuthSignedOut();
+    }
   }
 }
 

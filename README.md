@@ -5,9 +5,9 @@ SGS AI Technology — Flutter app for Android and iOS, backed by
 
 | | |
 | --- | --- |
-| Stack | Flutter 3.47 · Dart 3.13 · Riverpod · go_router · Dio · flutter_secure_storage |
+| Stack | Flutter 3.47 · Dart 3.13 · Riverpod · go_router · Dio · Firebase Auth/Remote Config |
 | Flavors | `dev`, `staging`, `prod` — distinct bundle ids and Firebase projects |
-| Auth | Backend-owned (ADR-001): email/password → access + refresh tokens in secure storage |
+| Auth | Firebase Auth identity; Firebase ID tokens are validated by backend-api |
 | Agents | [AGENTS.md](AGENTS.md) is the single source of truth for AI coding agents |
 
 ## Prerequisites
@@ -29,8 +29,9 @@ make platforms    # one time: generates android/ and ios/ host projects
 make run FLAVOR=dev
 ```
 
-`make platforms` runs `flutter create` so the native projects match your SDK;
-afterwards apply the flavor configuration in [docs/flavors.md](docs/flavors.md).
+`make platforms` runs `flutter create` with organization
+`com.sgsaitechnology`; flavor IDs, minimum platform versions and signing are
+configured in [docs/flavors.md](docs/flavors.md).
 
 Point the app at a backend by editing `config/dev.json`. A locally running
 backend is `http://localhost:8080` on iOS simulators and `http://10.0.2.2:8080`
@@ -40,6 +41,8 @@ on Android emulators.
 
 ```bash
 make check                  # format + analyze --fatal-infos + tests (run before every push)
+make api-generate           # regenerate typed transport models from OpenAPI
+make update-api-spec        # refresh openapi/backend.swagger from local backend
 make format                 # dart format .
 make test / make cov        # tests, tests with coverage at coverage/lcov.info
 make integration FLAVOR=dev # on-device flows
@@ -54,7 +57,7 @@ make help                   # all targets
 lib/
 ├── main.dart            entry point
 ├── app/                 bootstrap, App, router, theme tokens
-├── core/                config, network (Dio + interceptors), storage, session, logging
+├── core/                config, auth, network (Dio + interceptors), session, logging
 ├── features/<feature>/  data/ · domain/ · presentation/
 └── shared/              cross-feature widgets and validators
 test/                    mirrors lib/

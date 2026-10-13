@@ -8,6 +8,7 @@ build/
 .flutter-plugins-dependencies
 coverage/
 *.g.dart
+!lib/core/network/generated/*.g.dart
 *.freezed.dart
 *.mocks.dart
 
@@ -43,8 +44,11 @@ ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
 ios/Runner/GoogleService-Info.plist
 ios/Runner/*/GoogleService-Info.plist
+ios/Runner/Firebase/**/GoogleService-Info.plist
+**/GoogleService-Info.plist
 **/*.mobileprovision
 **/*.p12
+**/*.p8
 **/*.cer
 **/*.certSigningRequest
 

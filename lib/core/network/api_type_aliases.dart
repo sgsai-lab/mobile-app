@@ -1,0 +1,1 @@
+typedef ListString = List<String>;

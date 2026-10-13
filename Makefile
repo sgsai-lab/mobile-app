@@ -3,7 +3,7 @@ DEVICE ?=
 DEVICE_ARG := $(if $(DEVICE),-d $(DEVICE),)
 DEFINES = --dart-define-from-file=config/$(FLAVOR).json
 
-.PHONY: help setup hooks platforms format lint analyze test cov check \
+.PHONY: help setup hooks platforms format lint analyze test cov api-generate update-api-spec api-check check \
 	run build-apk build-aab build-ipa integration clean doctor outdated
 
 help:
@@ -11,6 +11,7 @@ help:
 
 setup: hooks ## Install dependencies and git hooks
 	flutter pub get
+	$(MAKE) api-generate
 
 hooks: ## Point git at the versioned hooks in .githooks/
 	./scripts/install-hooks.sh
@@ -30,10 +31,20 @@ analyze: ## Static analysis, infos are failures
 test: ## Unit and widget tests
 	flutter test
 
+api-generate: ## Generate API models from the checked-in OpenAPI snapshot
+	dart run build_runner build
+
+update-api-spec: ## Refresh the API snapshot from a running backend
+	./scripts/update-openapi.sh
+
+api-check: ## Fail when OpenAPI-generated models are stale
+	$(MAKE) api-generate
+	git diff --exit-code -- openapi/backend.swagger lib/core/network/generated
+
 cov: ## Tests with coverage report at coverage/lcov.info
 	flutter test --coverage
 
-check: lint analyze test ## Run before finishing any task
+check: lint analyze api-check test ## Run before finishing any task
 
 integration: ## On-device integration tests
 	flutter test integration_test $(DEVICE_ARG) $(DEFINES)

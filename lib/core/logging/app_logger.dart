@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 
 /// Thin logging facade. Never pass tokens, passwords, OTPs, recovery codes or
@@ -32,7 +35,15 @@ class AppLogger {
       error: error,
       stackTrace: stackTrace,
     );
-    // TODO(APP-04): forward to Crashlytics once Firebase is wired per flavor.
+    if (Firebase.apps.isNotEmpty) {
+      unawaited(
+        FirebaseCrashlytics.instance.recordError(
+          StateError('Application error (${error.runtimeType})'),
+          stackTrace ?? StackTrace.current,
+          reason: message,
+        ),
+      );
+    }
   }
 
   String _format(String message, Map<String, Object?>? context) {

@@ -32,5 +32,28 @@ void main() {
       expect(config.appTitle, 'SGS AI');
       expect(config.isProd, isTrue);
     });
+
+    test('enables request logging only when explicitly enabled in dev', () {
+      expect(
+        AppConfig.fromValues(
+          flavorKey: 'dev',
+          apiBaseUrl: 'http://localhost:8080',
+          enableHttpLogging: true,
+          firebaseEnabled: true,
+        ).enableHttpLogging,
+        isTrue,
+      );
+      for (final flavor in [Flavor.staging, Flavor.prod]) {
+        expect(
+          AppConfig.fromValues(
+            flavorKey: flavor.key,
+            apiBaseUrl: 'https://api.example.com',
+            enableHttpLogging: true,
+            firebaseEnabled: true,
+          ).enableHttpLogging,
+          isFalse,
+        );
+      }
+    });
   });
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_app/core/network/api_exception.dart';
 import 'package:mobile_app/features/auth/data/auth_repository.dart';
-import 'package:mobile_app/features/auth/domain/auth_tokens.dart';
 import 'package:mobile_app/features/auth/presentation/auth_state.dart';
 import 'package:mobile_app/features/auth/presentation/sign_in_screen.dart';
 
@@ -16,17 +15,11 @@ class _FakeAuthRepository implements AuthRepository {
   String? lastEmail;
 
   @override
-  Future<SignInResult> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     signInCalls++;
     lastEmail = email;
     final failure = this.failure;
     if (failure != null) throw failure;
-    return const SignInSucceeded(
-      AuthTokens(accessToken: 'token', expiresIn: 900),
-    );
   }
 
   @override

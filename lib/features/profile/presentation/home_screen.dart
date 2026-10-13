@@ -5,7 +5,7 @@ import 'package:mobile_app/core/network/api_exception.dart';
 import 'package:mobile_app/features/auth/presentation/auth_controller.dart';
 import 'package:mobile_app/features/profile/data/profile_repository.dart';
 import 'package:mobile_app/features/profile/domain/user_profile.dart';
-import 'package:mobile_app/shared/widgets/app_error_view.dart';
+import 'package:mobile_app/features/services/presentation/service_catalog_view.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -26,66 +26,67 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.refresh(currentUserProvider.future),
-        child: user.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator.adaptive(
-              semanticsLabel: 'Loading your profile',
+      body: Column(
+        children: [
+          user.when(
+            loading: () => Semantics(
+              label: 'Loading your profile',
+              child: const LinearProgressIndicator(),
             ),
+            error: (error, _) => ListTile(
+              title: Text(
+                error is ApiException ? error.message : 'Profile unavailable.',
+              ),
+              trailing: IconButton(
+                tooltip: 'Retry profile',
+                icon: const Icon(Icons.refresh),
+                onPressed: () => ref.invalidate(currentUserProvider),
+              ),
+            ),
+            data: _ProfileHeader.new,
           ),
-          error: (error, _) => AppErrorView(
-            message: error is ApiException
-                ? error.message
-                : 'Could not load your profile.',
-            onRetry: () => ref.invalidate(currentUserProvider),
-          ),
-          data: (profile) => _ProfileCard(profile: profile),
-        ),
+          const Expanded(child: ServiceCatalogView()),
+        ],
       ),
     );
   }
 }
 
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.profile});
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader(this.profile);
 
   final UserProfile profile;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(AppSpacing.lg),
-    children: [
-      Row(
-        children: [
-          CircleAvatar(radius: 28, child: Text(profile.initials)),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  profile.fullName.isEmpty ? 'Your profile' : profile.fullName,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Text(
-                  profile.email,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      if (!profile.emailVerified)
-        const Card(
-          child: ListTile(
-            leading: Icon(Icons.mark_email_unread_outlined),
-            title: Text('Verify your email'),
-            subtitle: Text('Check your inbox to finish setting up.'),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      AppSpacing.md,
+      AppSpacing.md,
+      AppSpacing.xs,
+    ),
+    child: Row(
+      children: [
+        CircleAvatar(radius: 20, child: Text(profile.initials)),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                profile.fullName.isEmpty ? 'Your profile' : profile.fullName,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              Text(profile.email, style: Theme.of(context).textTheme.bodySmall),
+            ],
           ),
         ),
-    ],
+        if (!profile.emailVerified)
+          const Tooltip(
+            message: 'Email not verified',
+            child: Icon(Icons.mark_email_unread_outlined),
+          ),
+      ],
+    ),
   );
 }

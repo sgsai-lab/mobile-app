@@ -21,6 +21,11 @@ Record: method, path, auth requirement, request body, success schema, status cod
 
 `lib/core/network/api_endpoints.dart` — one constant, no inline strings, no string interpolation of base URLs.
 
+When the backend contract changes, refresh `openapi/backend.swagger` with
+`make update-api-spec`, then run `make api-generate`. Use generated DTOs from
+`lib/core/network/generated/` in repositories so breaking schema changes surface
+at compile time; never edit generated files directly.
+
 ## 3. Call it from the repository
 
 ```dart

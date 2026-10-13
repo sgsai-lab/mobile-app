@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_app/app/connectivity_banner.dart';
 import 'package:mobile_app/app/router.dart';
 import 'package:mobile_app/app/theme/app_theme.dart';
 import 'package:mobile_app/core/config/app_config.dart';
@@ -16,13 +17,15 @@ class App extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       routerConfig: ref.watch(routerProvider),
-      builder: (context, child) => config.isProd
-          ? child ?? const SizedBox.shrink()
-          : Banner(
-              message: config.flavor.key.toUpperCase(),
-              location: BannerLocation.topEnd,
-              child: child ?? const SizedBox.shrink(),
-            ),
+      builder: (context, child) => ConnectivityBanner(
+        child: config.isProd
+            ? child ?? const SizedBox.shrink()
+            : Banner(
+                message: config.flavor.key.toUpperCase(),
+                location: BannerLocation.topEnd,
+                child: child ?? const SizedBox.shrink(),
+              ),
+      ),
     );
   }
 }
