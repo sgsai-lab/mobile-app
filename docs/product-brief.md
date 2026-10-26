@@ -58,9 +58,9 @@ founder approval; no analytics SDK is enabled yet.
 
 These are placeholders only, not real SGS AI service names or production URLs:
 
-- WorkDesk — `https://work.example.com`
-- LearnHub — `https://learn.example.com`
-- HelpDesk — `https://support.example.com`
+- WorkDesk — `https://work.google.com`
+- LearnHub — `https://learn.google.com`
+- HelpDesk — `https://support.google.com`
 
 Replace them in Firebase Remote Config key `pwa_services` before distributing a
 build to users.

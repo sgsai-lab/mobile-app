@@ -98,11 +98,11 @@ Firebase Remote Config key `pwa_services` is a JSON array. Each entry has
 ships with clearly marked sample entries until the real PWA names and URLs are
 published. The `dev`, `staging`, and `prod` Firebase projects keep separate values.
 
-Example value (replace the reserved sample URLs with registered PWA domains):
+Example value (replace these URLs with the registered PWA domains before publishing):
 
 ```json
 [
-  {"id":"workdesk","name":"WorkDesk","description":"Team operations workspace.","url":"https://work.example.com","icon":"work"},
-  {"id":"learnhub","name":"LearnHub","description":"Courses and learning resources.","url":"https://learn.example.com","icon":"learn"}
+  {"id":"workdesk","name":"WorkDesk","description":"Team operations workspace.","url":"https://work.google.com","icon":"work"},
+  {"id":"learnhub","name":"LearnHub","description":"Courses and learning resources.","url":"https://learn.google.com","icon":"learn"}
 ]
 ```

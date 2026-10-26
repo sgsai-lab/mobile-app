@@ -7,10 +7,11 @@ import 'package:mobile_app/features/services/domain/pwa_service.dart';
 import 'package:mobile_app/shared/widgets/app_empty_view.dart';
 import 'package:mobile_app/shared/widgets/app_error_view.dart';
 import 'package:mobile_app/shared/widgets/app_loading_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ServiceCatalogView extends ConsumerWidget {
-  const ServiceCatalogView({super.key});
+  const ServiceCatalogView({required this.onOpen, super.key});
+
+  final ValueChanged<PwaService> onOpen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +44,9 @@ class ServiceCatalogView extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  ...items.map((service) => _ServiceTile(service: service)),
+                  ...items.map(
+                    (service) => _ServiceTile(service: service, onOpen: onOpen),
+                  ),
                 ],
               ),
             ),
@@ -52,9 +55,10 @@ class ServiceCatalogView extends ConsumerWidget {
 }
 
 class _ServiceTile extends StatelessWidget {
-  const _ServiceTile({required this.service});
+  const _ServiceTile({required this.service, required this.onOpen});
 
   final PwaService service;
+  final ValueChanged<PwaService> onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -100,23 +104,11 @@ class _ServiceTile extends StatelessWidget {
             IconButton.filledTonal(
               tooltip: 'Open ${service.name}',
               icon: const Icon(Icons.open_in_new),
-              onPressed: () => _openService(context),
+              onPressed: () => onOpen(service),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _openService(BuildContext context) async {
-    final opened = await launchUrl(
-      Uri.parse(service.url),
-      mode: LaunchMode.externalApplication,
-    );
-    if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open this service.')),
-      );
-    }
   }
 }

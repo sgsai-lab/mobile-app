@@ -13,12 +13,12 @@ void main() {
         'id': 'workdesk',
         'name': 'WorkDesk',
         'description': 'A team workspace.',
-        'url': 'https://work.example.com',
+        'url': 'https://work.google.com',
         'icon': 'work',
       });
 
       expect(service.name, 'WorkDesk');
-      expect(service.url, 'https://work.example.com');
+      expect(service.url, 'https://work.google.com');
       expect(service.iconKey, 'work');
     });
 
@@ -42,9 +42,9 @@ void main() {
           .fetchServices();
 
       expect(services, PwaService.sampleCatalog);
-      expect(services, hasLength(3));
+      expect(services, hasLength(6));
       expect(
-        services.every((service) => service.url.contains('.example.com')),
+        services.every((service) => service.url.contains('.google.com')),
         isTrue,
       );
     },
@@ -54,7 +54,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpApp(
-      const ServiceCatalogView(),
+      ServiceCatalogView(onOpen: (_) {}),
       overrides: [
         serviceCatalogProvider.overrideWith(
           (ref) async => PwaService.sampleCatalog,
@@ -74,7 +74,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpApp(
-      const ServiceCatalogView(),
+      ServiceCatalogView(onOpen: (_) {}),
       overrides: [serviceCatalogProvider.overrideWith((ref) async => [])],
     );
     await tester.pumpAndSettle();
@@ -86,7 +86,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpApp(
-      const ServiceCatalogView(),
+      ServiceCatalogView(onOpen: (_) {}),
       overrides: [
         serviceCatalogProvider.overrideWith(
           (ref) async => throw const ApiException(
