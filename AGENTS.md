@@ -4,7 +4,7 @@ Instructions for AI coding agents (GitHub Copilot, Claude Code, Cursor, Codex). 
 
 ## Project
 
-SGS AI mobile app for Android and iOS. Flutter 3.47 · Dart 3.13 · Riverpod (no codegen) · go_router · Dio · Firebase Auth · Firebase Remote Config · very_good_analysis. Three flavors (`dev`, `staging`, `prod`) with distinct bundle IDs and Firebase projects. Firebase Auth is the mobile identity source; backend-api validates Firebase ID-token bearers and maps Firebase UIDs to local users. Existing backend ES256 sessions remain for other clients. Work is tracked in GitHub issues `APP-xx`.
+SGS AI mobile app for Android and iOS. Flutter 3.47 · Dart 3.13 · Riverpod (no codegen) · go_router · Dio · Firebase Messaging · Firebase Remote Config · very_good_analysis. Three flavors (`dev`, `staging`, `prod`) with distinct bundle IDs and Firebase projects. Identity is owned by the SGS `home` API ([ADR-002](https://github.com/sgsai-lab/home/blob/main/docs/adr/0002-firestore-first-data-platform.md)): the app signs in through `/api/v1/auth/*` (email/password, Google, Apple on both platforms), sends `X-Client: mobile` on every request, keeps the access token and the single-use refresh token in secure storage, and refreshes with `POST /api/v1/auth/token/refresh`. Firebase is used only for Messaging, Crashlytics, App Distribution, Remote Config and Analytics — never for identity. The product is a launcher: members pick their organisation, see projects and tap a product to open its PWA through `https://www.sgsaitechnology.com/go/{slug}`. Work is tracked in GitHub issues `APP-xx`.
 
 ## Commands
 
@@ -15,7 +15,7 @@ make run FLAVOR=dev             # flutter run with config/dev.json
 make check                      # format + analyze (--fatal-infos) + tests — run before finishing any task
 make format                     # dart format .
 make api-generate               # regenerate transport models from openapi/backend.swagger
-make update-api-spec            # refresh the snapshot (requires backend-api running)
+make update-api-spec            # refresh the snapshot (requires the home API running)
 make test / make cov            # tests, tests with coverage
 make integration FLAVOR=dev     # integration_test on a device
 make build-aab FLAVOR=prod      # release bundle
@@ -30,7 +30,7 @@ lib/main.dart                 entry point -> bootstrap(App.new)
 lib/app/                      bootstrap, App widget, router, theme tokens
 lib/core/config/              AppConfig + Flavor (compile-time environment)
 lib/core/network/             Dio client, endpoints, interceptors, ApiException
-lib/core/auth/                FirebaseAuth provider (SDK owns persistence/refresh)
+lib/core/auth/                SGS API session provider: secure token storage, refresh, X-Client header (migrating off FirebaseAuth in APP-07)
 lib/core/session/             SessionEvents (expiry signal, no feature imports)
 lib/core/logging/             AppLogger facade
 lib/features/<feature>/data/         repositories + DTO mapping (Dio lives here)
