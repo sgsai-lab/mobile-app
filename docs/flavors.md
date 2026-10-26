@@ -22,8 +22,11 @@ the binary is readable by anyone who downloads the app. Firebase stays disabled
 until native Firebase files are provisioned and `FIREBASE_ENABLED` is set to
 `true` for that flavor.
 
-The flavor API hosts match APP-03. The development config currently targets a
-local backend; set `API_BASE_URL` to the dev Cloud Run URL when it is provisioned.
+`API_BASE_URL` is the origin of the SGS website whose `/api/v1` the app calls
+([ADR-002](https://github.com/sgsai-lab/home/blob/main/docs/adr/0002-firestore-first-data-platform.md)): `https://www.sgsaitechnology.com` in production, the dev
+Cloud Run URL of `home` for `dev`/`staging` once provisioned. The committed
+`config/*.json` values still point at the retired `api.sgsaitechnology.com` hosts
+and are updated in APP-07.
 
 > Android emulators cannot reach `localhost`. For a local backend use
 > `http://10.0.2.2:8080` in `config/dev.json` (iOS simulators use `localhost`).
@@ -62,8 +65,12 @@ android {
 - Put each flavor's `google-services.json` in `android/app/src/<flavor>/`. The
   Google Services plugin is applied only when at least one flavor config exists;
   the files are gitignored — fetch them from the Firebase console (APP-04).
-- Enable Email/Password sign-in in the Firebase Authentication console for each
-  environment. Backend `FIREBASE_PROJECT_ID` must match the same project.
+- Firebase Authentication is **not** used (ADR-002). For Google Sign-In create
+  Android (per flavor SHA-1) and iOS OAuth client IDs in the GCP console and hand
+  them to the `home` API as `GOOGLE_CLIENT_IDS`. For Sign in with Apple on
+  Android, register an Apple Services ID whose return URL is
+  `https://www.sgsaitechnology.com/api/v1/auth/apple/callback`; iOS uses the
+  native capability.
 - Release signing reads `android/key.properties` (gitignored). CI writes it from
   the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
   `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` environment secrets.

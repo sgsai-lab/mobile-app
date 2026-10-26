@@ -1,13 +1,15 @@
 # mobile-app
 
-SGS AI Technology — Flutter app for Android and iOS, backed by
-[backend-api](https://github.com/sgsai-lab/backend-api).
+SGS AI Technology — Flutter app for Android and iOS: the hub through which a
+client's staff open the business and education services SGS built for them.
+Backed by the SGS website API (`/api/v1` in [home](https://github.com/sgsai-lab/home)) per
+[ADR-002](https://github.com/sgsai-lab/home/blob/main/docs/adr/0002-firestore-first-data-platform.md).
 
 | | |
 | --- | --- |
-| Stack | Flutter 3.47 · Dart 3.13 · Riverpod · go_router · Dio · Firebase Auth/Remote Config |
+| Stack | Flutter 3.47 · Dart 3.13 · Riverpod · go_router · Dio · Firebase Messaging/Remote Config |
 | Flavors | `dev`, `staging`, `prod` — distinct bundle ids and Firebase projects |
-| Auth | Firebase Auth identity; Firebase ID tokens are validated by backend-api |
+| Auth | SGS API sessions issued by `home` (`/api/v1/auth/*`): email/password, Google and Apple (both platforms); `X-Client: mobile`; no Firebase Auth |
 | Agents | [AGENTS.md](AGENTS.md) is the single source of truth for AI coding agents |
 
 ## Prerequisites
@@ -33,9 +35,11 @@ make run FLAVOR=dev
 `com.sgsaitechnology`; flavor IDs, minimum platform versions and signing are
 configured in [docs/flavors.md](docs/flavors.md).
 
-Point the app at a backend by editing `config/dev.json`. A locally running
-backend is `http://localhost:8080` on iOS simulators and `http://10.0.2.2:8080`
-on Android emulators.
+Point the app at a backend by editing `config/dev.json` (`API_BASE_URL` is the
+site origin; the client appends `/api/v1`). The API lives in the `home` repo: its
+container serves it at `http://localhost:8080` on iOS simulators and
+`http://10.0.2.2:8080` on Android emulators; production is
+`https://www.sgsaitechnology.com`.
 
 ## Daily commands
 
