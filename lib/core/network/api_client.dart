@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile_app/core/auth/firebase_auth_provider.dart';
+import 'package:mobile_app/core/auth/token_store.dart';
 import 'package:mobile_app/core/config/app_config.dart';
 import 'package:mobile_app/core/network/auth_interceptor.dart';
+import 'package:mobile_app/core/network/client_headers.dart';
 import 'package:mobile_app/core/network/request_log_interceptor.dart';
 import 'package:mobile_app/core/session/session_events.dart';
 
@@ -10,7 +11,7 @@ import 'package:mobile_app/core/session/session_events.dart';
 /// on [Dio] directly.
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
-  final firebaseAuth = ref.watch(firebaseAuthProvider);
+  final tokenStore = ref.watch(tokenStoreProvider);
   final sessionEvents = ref.watch(sessionEventsProvider);
 
   final options = BaseOptions(
@@ -19,7 +20,10 @@ final dioProvider = Provider<Dio>((ref) {
     receiveTimeout: config.receiveTimeout,
     sendTimeout: config.connectTimeout,
     contentType: Headers.jsonContentType,
-    headers: <String, String>{'Accept': Headers.jsonContentType},
+    headers: <String, String>{
+      'Accept': Headers.jsonContentType,
+      ...clientHeaders(),
+    },
   );
 
   // A bare client for refresh and retry, so a 401 can never recurse.
@@ -27,7 +31,7 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(options)
     ..interceptors.add(
       AuthInterceptor(
-        firebaseAuth: firebaseAuth,
+        tokenStore: tokenStore,
         refreshClient: refreshClient,
         onSessionExpired: () async => sessionEvents.notifyExpired(),
       ),

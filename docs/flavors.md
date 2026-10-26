@@ -24,9 +24,8 @@ until native Firebase files are provisioned and `FIREBASE_ENABLED` is set to
 
 `API_BASE_URL` is the origin of the SGS website whose `/api/v1` the app calls
 ([ADR-002](https://github.com/sgsai-lab/home/blob/main/docs/adr/0002-firestore-first-data-platform.md)): `https://www.sgsaitechnology.com` in production, the dev
-Cloud Run URL of `home` for `dev`/`staging` once provisioned. The committed
-`config/*.json` values still point at the retired `api.sgsaitechnology.com` hosts
-and are updated in APP-07.
+Cloud Run URL of `home` for `dev`/`staging` once provisioned. `config/prod.json` points at `https://www.sgsaitechnology.com`; `staging` keeps its
+placeholder host until a staging site exists (INF-03).
 
 > Android emulators cannot reach `localhost`. For a local backend use
 > `http://10.0.2.2:8080` in `config/dev.json` (iOS simulators use `localhost`).
@@ -98,18 +97,18 @@ android {
 - [ ] Each build reports to its own Firebase project; a test crash appears in Crashlytics
 - [ ] Release builds are signed in CI with no secrets on developer machines
 
-## Remote Config service catalog
+## App catalog
 
-Firebase Remote Config key `pwa_services` is a JSON array. Each entry has
-`id`, `name`, `description`, `url` (HTTPS only), and optional `icon`. The app
-ships with clearly marked sample entries until the real PWA names and URLs are
-published. The `dev`, `staging`, and `prod` Firebase projects keep separate values.
+Apps and services are no longer configured in Remote Config. Each workspace's apps come from the SGS API (`GET /api/v1/products?client_id=`) and are managed by SGS staff and workspace admins in the web hub (`/admin/clients/`). The app never opens a stored URL directly: it asks for a single-use launch link (`POST /api/v1/products/{id}/launch-token`) so every launch is authorised and counted.
 
-Example value (replace these URLs with the registered PWA domains before publishing):
+## Deep links (APP-14)
 
-```json
-[
-  {"id":"workdesk","name":"WorkDesk","description":"Team operations workspace.","url":"https://work.google.com","icon":"work"},
-  {"id":"learnhub","name":"LearnHub","description":"Courses and learning resources.","url":"https://learn.google.com","icon":"learn"}
-]
-```
+| Flavor | App Links / Universal Links | Custom scheme |
+| --- | --- | --- |
+| `dev` | `https://www.sgsaitechnology.com/go/*` | `sgsai-dev://go/{slug}` |
+| `staging` | `https://www.sgsaitechnology.com/go/*` | `sgsai-stg://go/{slug}` |
+| `prod` | `https://www.sgsaitechnology.com/go/*` | `sgsai://go/{slug}` |
+
+- Android: intent filters in `AndroidManifest.xml` use the `appLinksHost` and `deepLinkScheme` manifest placeholders from `build.gradle.kts`. Verification succeeds only for packages listed by the site: set `ANDROID_CERT_SHA256` (Play App Signing and upload certificates) and, for dev/staging, `ANDROID_APP_PACKAGES` on the home service.
+- iOS: `Runner/Runner.entitlements` declares `applinks:www.sgsaitechnology.com`; `SGSAI_DEEP_LINK_SCHEME` is a per-configuration build setting used by `Info.plist`. Enable the Associated Domains capability on each App ID and set `APPLE_TEAM_ID` (and `IOS_BUNDLE_IDS` for non-prod) on the home service.
+- Check: `adb shell am start -a android.intent.action.VIEW -d "https://www.sgsaitechnology.com/go/demo"` and `xcrun simctl openurl booted "sgsai-dev://go/demo"`.
