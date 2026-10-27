@@ -9,12 +9,18 @@ keeps a fresh clone from failing before Firebase and signing setup is complete.
 Create a protected GitHub environment named `internal-testing`. Add required
 reviewers before enabling release signing secrets.
 
-Repository/environment variables:
+Repository variables (job-level `if:` conditions run before the environment is
+resolved, so these must be set on the repository, not the environment):
 
 | Variable | Value |
 | --- | --- |
 | `INTERNAL_ANDROID_DISTRIBUTION` | `true` when Android Firebase App Distribution is ready |
 | `INTERNAL_IOS_DISTRIBUTION` | `true` when iOS signing and distribution are ready |
+
+Environment variables on `internal-testing`:
+
+| Variable | Value |
+| --- | --- |
 | `INTERNAL_API_BASE_URL` | `https://` origin of the `home` API the tester build calls (overrides the `localhost` default in `config/dev.json`; currently `https://www.sgsaitechnology.com`) |
 | `FIREBASE_ANDROID_APP_ID` | Firebase Android app ID for `com.sgsaitechnology.app.dev` |
 | `FIREBASE_IOS_APP_ID` | Firebase iOS app ID for `com.sgsaitechnology.app.dev` |
