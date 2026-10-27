@@ -10,6 +10,10 @@ Firebase files and signing all at once (APP-03).
 | `staging` | `com.sgsaitechnology.app.stg` | `config/staging.json` | `sgsai-staging` |
 | `prod` | `com.sgsaitechnology.app` | `config/prod.json` | `sgsai-prod` |
 
+> Until the `sgsai-*` projects exist (APP-04), the `dev` Android app is
+> registered in `home-509818` for Firebase App Distribution; see
+> [runbooks/internal-distribution.md](runbooks/internal-distribution.md).
+
 Run and build with the flavor **and** its config:
 
 ```bash
