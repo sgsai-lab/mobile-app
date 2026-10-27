@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: internal-testing
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation, no service-account keys
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -45,10 +48,20 @@ jobs:
             > android/app/src/dev/google-services.json
       - run: flutter pub get
       - name: Build dev APK
-        run: >-
-          flutter build apk --debug --flavor dev
-          --dart-define-from-file=config/dev.json
-          --dart-define=FIREBASE_ENABLED=true
+        env:
+          # Overrides the localhost default in config/dev.json; testers must
+          # reach the hosted API, so an unset variable fails the build.
+          API_BASE_URL: ${{ vars.INTERNAL_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "::error::INTERNAL_API_BASE_URL must be an https origin"; exit 1 ;;
+          esac
+          flutter build apk --debug --flavor dev \
+            --dart-define-from-file=config/dev.json \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=FIREBASE_ENABLED=true
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-dev-${{ github.sha }}.apk
@@ -56,26 +69,25 @@ jobs:
           retention-days: 7
       - name: Install Firebase CLI
         run: npm install --global firebase-tools@"$FIREBASE_CLI_VERSION"
+      - name: Authenticate to Google Cloud with Workload Identity Federation
+        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_WIF_SERVICE_ACCOUNT }}
       - name: Distribute to testers
         env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_APP_ID: ${{ vars.FIREBASE_ANDROID_APP_ID }}
           FIREBASE_TESTER_GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS }}
         run: |
           set -euo pipefail
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
-          chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
           firebase appdistribution:distribute \
             build/app/outputs/flutter-apk/app-dev-debug.apk \
             --app "$FIREBASE_APP_ID" \
             --groups "$FIREBASE_TESTER_GROUPS" \
             --release-notes "Internal dev build ${GITHUB_SHA::7}"
-      - name: Remove Firebase config and credentials
+      - name: Remove Firebase config
         if: always()
-        run: |
-          rm -f android/app/src/dev/google-services.json \
-            "$RUNNER_TEMP/firebase-service-account.json"
+        run: rm -f android/app/src/dev/google-services.json
       - name: Report build
         if: always()
         run: |
@@ -92,6 +104,9 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
     environment: internal-testing
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -152,11 +167,19 @@ jobs:
 
       - run: flutter pub get
       - name: Build dev IPA
-        run: >-
-          flutter build ipa --release --flavor dev
-          --dart-define-from-file=config/dev.json
-          --dart-define=FIREBASE_ENABLED=true
-          --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
+        env:
+          API_BASE_URL: ${{ vars.INTERNAL_API_BASE_URL }}
+        run: |
+          set -euo pipefail
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "::error::INTERNAL_API_BASE_URL must be an https origin"; exit 1 ;;
+          esac
+          flutter build ipa --release --flavor dev \
+            --dart-define-from-file=config/dev.json \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=FIREBASE_ENABLED=true \
+            --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-dev-${{ github.sha }}.ipa
@@ -164,28 +187,27 @@ jobs:
           retention-days: 7
       - name: Install Firebase CLI
         run: npm install --global firebase-tools@"$FIREBASE_CLI_VERSION"
+      - name: Authenticate to Google Cloud with Workload Identity Federation
+        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_WIF_SERVICE_ACCOUNT }}
       - name: Distribute to testers
         env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_APP_ID: ${{ vars.FIREBASE_IOS_APP_ID }}
           FIREBASE_TESTER_GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS }}
         run: |
           set -euo pipefail
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
-          chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
           firebase appdistribution:distribute build/ios/ipa/*.ipa \
             --app "$FIREBASE_APP_ID" \
             --groups "$FIREBASE_TESTER_GROUPS" \
             --release-notes "Internal dev build ${GITHUB_SHA::7}"
-          rm -f "$RUNNER_TEMP/firebase-service-account.json"
       - name: Remove signing material
         if: always()
         run: |
           security delete-keychain "$IOS_KEYCHAIN_PATH" 2>/dev/null || true
           rm -f "$IOS_CERTIFICATE_PATH" "$IOS_PROFILE_PATH" \
             "$IOS_PROFILE_PLIST_PATH" "$RUNNER_TEMP/ExportOptions.plist" \
-            "$RUNNER_TEMP/firebase-service-account.json" \
             "$IOS_FIREBASE_CONFIG_PATH"
           rm -f "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision
       - name: Report build
