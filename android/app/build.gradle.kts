@@ -46,16 +46,22 @@ android {
     productFlavors {
         create("dev") {
             dimension = "environment"
+            manifestPlaceholders["appLinksHost"] = "www.sgsaitechnology.com"
+            manifestPlaceholders["deepLinkScheme"] = "sgsai-dev"
             applicationIdSuffix = ".dev"
             resValue("string", "app_name", "SGS AI Dev")
         }
         create("staging") {
             dimension = "environment"
+            manifestPlaceholders["appLinksHost"] = "www.sgsaitechnology.com"
+            manifestPlaceholders["deepLinkScheme"] = "sgsai-stg"
             applicationIdSuffix = ".stg"
             resValue("string", "app_name", "SGS AI Staging")
         }
         create("prod") {
             dimension = "environment"
+            manifestPlaceholders["appLinksHost"] = "www.sgsaitechnology.com"
+            manifestPlaceholders["deepLinkScheme"] = "sgsai"
             resValue("string", "app_name", "SGS AI")
         }
     }

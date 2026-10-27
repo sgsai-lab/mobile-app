@@ -23,22 +23,65 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> _restoreSession() async {
-    final repository = ref.read(authRepositoryProvider);
-    final hasSession = await repository.hasStoredSession();
+    final hasSession = await ref
+        .read(authRepositoryProvider)
+        .hasStoredSession();
     state = hasSession ? const AuthSignedIn() : const AuthSignedOut();
   }
 
-  Future<void> signIn({required String email, required String password}) async {
+  Future<void> signIn({required String email, required String password}) =>
+      _run(
+        () => ref
+            .read(authRepositoryProvider)
+            .signIn(email: email, password: password),
+      );
+
+  Future<void> signInWithIdToken({
+    required IdentityProvider provider,
+    required String idToken,
+    String? nonce,
+    String? fullName,
+  }) => _run(
+    () => ref
+        .read(authRepositoryProvider)
+        .signInWithIdToken(
+          provider: provider,
+          idToken: idToken,
+          nonce: nonce,
+          fullName: fullName,
+        ),
+  );
+
+  Future<void> _run(Future<SignInResult> Function() attempt) async {
     state = const AuthSigningIn();
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .signIn(email: email, password: password);
-      state = const AuthSignedIn();
+      state = switch (await attempt()) {
+        SignInComplete() => const AuthSignedIn(),
+        SignInNeedsMfa(:final mfaToken) => AuthNeedsMfa(mfaToken: mfaToken),
+      };
     } on ApiException catch (error) {
       state = AuthSignedOut(message: error.message);
     }
   }
+
+  Future<void> verifyMfa(String code) async {
+    final current = state;
+    if (current is! AuthNeedsMfa) return;
+    state = AuthNeedsMfa(mfaToken: current.mfaToken, busy: true);
+    try {
+      await ref
+          .read(authRepositoryProvider)
+          .verifyMfa(mfaToken: current.mfaToken, code: code);
+      state = const AuthSignedIn();
+    } on ApiException catch (error) {
+      // An expired or locked challenge needs a fresh sign-in.
+      state = error.statusCode == 429 || error.code == 'MFA_EXPIRED'
+          ? AuthSignedOut(message: error.message)
+          : AuthNeedsMfa(mfaToken: current.mfaToken, message: error.message);
+    }
+  }
+
+  void cancelMfa() => state = const AuthSignedOut();
 
   Future<void> signOut() async {
     try {

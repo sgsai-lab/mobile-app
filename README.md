@@ -7,9 +7,9 @@ Backed by the SGS website API (`/api/v1` in [home](https://github.com/sgsai-lab/
 
 | | |
 | --- | --- |
-| Stack | Flutter 3.47 · Dart 3.13 · Riverpod · go_router · Dio · Firebase Messaging/Remote Config |
+| Stack | Flutter 3.47 · Dart 3.13 · Riverpod · go_router · Dio · flutter_secure_storage · Firebase Crashlytics |
 | Flavors | `dev`, `staging`, `prod` — distinct bundle ids and Firebase projects |
-| Auth | SGS API sessions issued by `home` (`/api/v1/auth/*`): email/password, Google and Apple (both platforms); `X-Client: mobile`; no Firebase Auth |
+| Auth | SGS API sessions issued by `home` (`/api/v1/auth/*`): email/password with two-factor codes (Google/Apple token exchange ready in `AuthRepository`); tokens in Keychain/Keystore; `X-Client: mobile`; no Firebase Auth |
 | Agents | [AGENTS.md](AGENTS.md) is the single source of truth for AI coding agents |
 
 ## Prerequisites

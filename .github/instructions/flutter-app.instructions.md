@@ -26,8 +26,8 @@ Dependencies point inwards: `presentation → data → domain`. `core/` must nev
 
 - Paths live in `ApiEndpoints`; no inline URL strings.
 - Repositories wrap every call in `try/on DioException` → `throw ApiException.fromDioException(e)`.
-- Endpoints that must not send a token pass `Options(extra: {skipAuth: true})`. Firebase bootstrap sends its verified ID token to link the Firebase UID with the backend user.
-- Token attachment and one forced Firebase ID-token refresh/retry belong to `AuthInterceptor` only. FirebaseAuth owns token persistence; never read or write Firebase tokens in app storage, repositories or widgets.
+- Endpoints that must not send a token pass `Options(extra: {skipAuth: true})`. Sign-in, MFA and refresh are public endpoints. ID token to link the Firebase UID with the backend user.
+- Token attachment and one refresh-token rotation + retry belong to `AuthInterceptor` only. Tokens live in `TokenStore` (secure storage); never read or write them in repositories other than `AuthRepository`, widgets or logs.
 - Parse JSON in explicit `fromJson` factories with typed casts and defaults for optional fields. Backend field names are `snake_case`.
 
 ## UI
@@ -42,6 +42,6 @@ Dependencies point inwards: `presentation → data → domain`. `core/` must nev
 ## Configuration & security
 
 - Read build-time values only through `AppConfig`; never call `String.fromEnvironment` in feature code.
-- Firebase credentials and tokens remain inside the FirebaseAuth SDK. Never copy tokens into `SharedPreferences`, files, logs, analytics or URLs.
+- SGS tokens remain in `TokenStore`. Never copy them into `SharedPreferences`, the snapshot cache, files, logs, analytics or URLs. Launch URLs from the API are single-use and must not be stored.
 - `AppLogger` takes messages and non-sensitive context only — never bodies, headers or tokens.
 - No platform channels or plugins added without checking Android and iOS permission impact; new permissions need an issue and a privacy note.

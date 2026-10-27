@@ -79,8 +79,6 @@ jobs:
   build-android:
     name: Android debug build (dev)
     needs: [static-analysis]
-    # Skipped until `make platforms` has generated the Android host project.
-    if: hashFiles('android/app/build.gradle', 'android/app/build.gradle.kts') != ''
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
